@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>「SDGsキッズEXPO」クイズ！</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* アプリ全体のフォントを設定 */
+        body {
+            font-family: 'M PLUS+Rounded 1c', sans-serif;
+            background: linear-gradient(to bottom, #87CEEB, #cdeefd);
+            background-attachment: fixed;
+        }
+        /* ボタンやカードがフワッと表示されるアニメーション */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out forwards;
+            opacity: 0;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* ボタンのホバー（マウスを乗せた時）のアニメーション */
+        .btn-hover {
+            transition: all 0.3s ease;
+        }
+        .btn-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+        /* ガラスのような半透明のカードデザイン */
+        .glass-card {
+            background-color: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 2rem;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        /* 画面切り替え時のアニメーション */
+        .screen {
+            display: none;
+        }
+        .screen.active {
+            display: flex;
+            animation: screenFadeIn 0.6s forwards;
+        }
+        @keyframes screenFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        /* 回答選択肢のボタンのスタイル */
+        .quiz-option-btn {
+            background-color: white;
+            transition: all 0.2s ease-in-out;
+        }
+        .quiz-option-btn:hover {
+            transform: scale(1.03);
+            border-color: #60a5fa; /* blue-400 */
+        }
+        .correct-answer {
+            background-color: #22c55e !important; /* green-500 */
+            color: white;
+            border-color: #16a34a !important; /* green-600 */
+        }
+        .incorrect-answer {
+            background-color: #ef4444 !important; /* red-500 */
+            color: white;
+            border-color: #dc2626 !important; /* red-600 */
+        }
+        .disabled-option {
+            background-color: #e5e7eb !important; /* gray-200 */
+            color: #6b7280; /* gray-500 */
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div id="app-container" class="p-4 min-h-screen flex flex-col justify-center items-center">
+
+        <!-- Language Selection Screen -->
+        <div id="language-screen" class="screen active w-full max-w-2xl flex-col items-center justify-center">
+            <div class="glass-card w-full text-center space-y-8">
+                <h1 class="text-3xl md:text-4xl font-extrabold text-blue-800">「SDGsキッズEXPO」クイズ！<br><span class="text-2xl md:text-3xl font-bold">SDGs Kids EXPO Quiz!</span></h1>
+                <p class="text-lg text-gray-700">言語を選んでね<br>Please select a language</p>
+                <div class="flex flex-col md:flex-row justify-center items-center gap-6">
+                    <button onclick="selectLanguage('jp')" class="w-full md:w-48 bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-6 rounded-xl shadow-lg btn-hover">日本語</button>
+                    <button onclick="selectLanguage('en')" class="w-full md:w-48 bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-xl shadow-lg btn-hover">English</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz Selection Screen -->
+        <div id="quiz-selection-screen" class="screen w-full max-w-2xl flex-col items-center justify-center">
+            <div class="glass-card w-full text-center space-y-6">
+                <h1 id="quiz-selection-title" class="text-3xl md:text-4xl font-extrabold text-blue-800"></h1>
+                <div id="quiz-buttons" class="space-y-4">
+                    <!-- Quiz buttons will be inserted here by JS -->
+                </div>
+                 <button onclick="showScreen('language-screen')" class="mt-6 bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-colors">
+                    <span id="change-lang-btn-text"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="screen w-full max-w-2xl flex-col items-center justify-center">
+            <div class="w-full space-y-4">
+                <div class="bg-white/80 backdrop-blur-sm p-4 md:p-6 rounded-2xl shadow-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 id="quiz-title" class="text-lg md:text-2xl font-extrabold text-blue-800"></h2>
+                        <div id="question-counter" class="text-base md:text-lg font-bold text-gray-500"></div>
+                    </div>
+                    <div id="question-card">
+                        <p id="question-text" class="text-base md:text-xl font-bold mb-6 min-h-[90px]"></p>
+                        <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <!-- Options will be inserted here by JS -->
+                        </div>
+                    </div>
+                </div>
+                <div id="feedback-container" class="hidden bg-white/90 backdrop-blur-sm p-4 md:p-5 rounded-2xl shadow-lg">
+                    <div class="flex flex-col md:flex-row items-center gap-4">
+                        <div class="flex-shrink-0">
+                            <img id="feedback-character" src="" alt="キャラクター" class="w-24 h-24 md:w-32 md:h-32 object-contain">
+                        </div>
+                        <div class="flex-grow w-full text-center md:text-left">
+                            <h3 id="feedback-title" class="text-xl md:text-2xl font-bold mb-2"></h3>
+                            <p id="feedback-explanation" class="text-sm md:text-base"></p>
+                            <button id="next-question-btn" class="mt-4 w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors"></button>
+                        </div>
+                    </div>
+                </div>
+                <!-- In-quiz navigation buttons -->
+                <div class="mt-4 flex flex-col md:flex-row gap-4">
+                    <button id="restart-quiz-btn-ingame" class="w-full md:w-1/2 bg-blue-400 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors"></button>
+                    <button id="home-btn" class="w-full md:w-1/2 bg-gray-400 hover:bg-gray-500 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors"></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="screen w-full max-w-2xl flex-col items-center justify-center">
+            <div class="glass-card w-full text-center space-y-6">
+                <h1 id="result-title" class="text-4xl font-extrabold text-yellow-500"></h1>
+                <div class="bg-white/50 p-6 md:p-8 rounded-2xl">
+                    <p id="result-message" class="text-xl md:text-2xl font-bold mb-2"></p>
+                    <p id="result-score" class="text-4xl md:text-5xl font-extrabold text-blue-600"></p>
+                </div>
+                <div class="flex flex-col md:flex-row justify-center items-center gap-4">
+                    <button id="restart-quiz-btn" class="w-full md:w-auto bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-md btn-hover"></button>
+                    <button id="change-quiz-btn" class="w-full md:w-auto bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-md btn-hover"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- キャラクター画像 ---
+        const characterImages = {
+            correct: 'https://storage.googleapis.com/gemini-prod/images/489b299a-178a-461d-ae7b-b2d94fd1ff96', // ジョー.jpg
+            incorrect: 'https://storage.googleapis.com/gemini-prod/images/c79945e7-7e49-421e-ae7d-b811c0ddc2ad'  // あまぐもくん２.jpg
+        };
+
+        // --- クイズデータ ---
+        const quizData = {
+            jp: {
+                selectionTitle: "クイズを選んでね！",
+                changeLangText: "言語選択にもどる",
+                quizzes: {
+                    water: {
+                        title: "大阪の「水道」クイズ",
+                        buttonText: "大阪の「水道」クイズ",
+                        questions: [
+                            { q: "大阪市の水道水は「おいしい！」って言われているんだけど、それはどんな特別なことをしているからでしょう？", options: ["水道のパイプが全部ピカピカだから。", "特別な機械で水をいつも冷やしているから。", "浄水場（じょうすいじょう）で「高度浄水処理（こうどじょうすいしょり）」をしているから。", "山のわき水をそのまま使っているから。"], a: 2, exp: "大阪市では、水をきれいにする「浄水場」で、「高度浄水処理」という特別な方法で水をきれいにしているんだ。これは、オゾンや活性炭（かっせいたん）というものを使って、水の中に残っているにおいや味のもとになるものをしっかりと取り除く仕組みだよ。だから、水道水がすっきりして、おいしくなるんだね。" },
+                            { q: "水道水には、みんなが安心して飲めるように「カルキ」というものが少し入っているよ。このカルキのにおいを少なくするために、大阪市水道局はどんな工夫をしているでしょう？", options: ["カルキを入れる量を細かく調整したり、入れる場所を変えたりしている。", "カルキを一切入れないようにしている。", "おうちの水道に特別なフィルターをつけている。", "水道管の中に特別なにおい消しを入れている。"], a: 0, exp: "水道水には、安全のためにカルキ（塩素）が入っているけれど、大阪市水道局はカルキのにおい（カルキ臭）を減らすために、入れる量を調節したり、浄水場だけでなく各地の配水場（水を届ける場所）でも濃度をコントロールしているんだ。これによって、みんなが気持ちよく水道水を飲めるようになっているんだよ。" },
+                            { q: "地球を大切にするために、大阪市は「お出かけに〇〇ボトル」を使おう！と呼びかけています。〇〇に入る言葉は何でしょう？", options: ["ペットボトル", "捨てられるボトル", "水筒", "マイボトル"], a: 3, exp: "大阪市は、プラスチックごみを減らすために、「お出かけにマイボトル」を使おう！という動画も作って、みんなに広めているんだ。マイボトルを繰り返し使うことで、ペットボトルなどの使い捨てプラスチックごみを減らすことにつながって、地球にも優しいんだよ。" },
+                            { q: "水道水がどのようにきれいにされているか、みんなが実際に体験できるキットの名前は何でしょう？", options: ["水の分析キット", "浄水処理実験キット", "水の味比べキット", "水道管組み立てキット"], a: 1, exp: "大阪市には、「浄水処理実験キット」という、水道水をきれいにする仕組みを自分で試せる体験キットがあるんだ。これを使えば、水がどうやってきれいになるのかを、楽しみながら学ぶことができるよ。" },
+                            { q: "大阪市水道局は、水道水のおいしさや安全さのひみつを伝えるために、どんな展示物を用意しているでしょう？", options: ["ポスター", "パネルデータ", "大きな模型", "絵本"], a: 1, exp: "大阪市水道局は、「安全でおいしい大阪市の水道水のひみつ」というテーマのパネルデータを用意しているよ。これを見ると、大阪の水道水がどうして安全でおいしいのか、その理由がわかるんだ。" }
+                        ]
+                    },
+                    sewer: {
+                        title: "大阪の「下水道」クイズ",
+                        buttonText: "大阪の「下水道」クイズ",
+                        questions: [
+                            { q: "おうちで使ったお風呂やトイレの汚れた水（下水）は、どこへ行ってきれいになるでしょう？", options: ["そのまま川に流される。", "地面にしみ込んでなくなる。", "貯水タンクにためられて、また使う。", "下水処理場（げすいしょりじょう）に行く。"], a: 3, exp: "おうちで使った汚れた水（下水）は、地下にある下水道管を通って「下水処理場」という場所へ運ばれるんだ。大阪市には12か所もの下水処理場があって、そこで水をきれいにするよ。" },
+                            { q: "下水処理場では、汚れた水をどうやってきれいにしているでしょう？", options: ["強い薬を使って汚れを溶かす。", "特別な網でゴミを全部取り除く。", "微生物（びせいぶつ）という小さな生き物の力で汚れを食べる。", "太陽の光を当てて汚れを消す。"], a: 2, exp: "下水処理場では、「活性汚泥法（かっせいおでいほう）」という方法で、水の中にいる微生物たちが汚れを食べて、水をきれいにしてくれるんだ。この微生物のおかげで、汚れていた水は90%以上もきれいになるんだよ。" },
+                            { q: "下水処理場でとってもきれいになった水は、どんなことに使われているでしょう？", options: ["川のせせらぎや大阪城のお堀（ほり）の水になる。", "家で飲む水になる。", "プールで使う水になる。", "工事現場の水を埋める。"], a: 0, exp: "下水処理場で高度にきれいになった水は、とても大切な水資源だよ。この水は、川のせせらぎや、災害の時の火を消す水（防火用水）になったり、なんとみんながよく知っている大阪城のお堀の水にも使われているんだ！" },
+                            { q: "大阪の街では、大雨が降ると、汚れた水が川にあふれてしまうことがありました。これを防ぐために、地下に作られた大きなトンネル（管）の名前は何でしょう？", options: ["地下ダム", "平成の太閤下水（へいせいのたいこうげすい）", "雨水ストック管", "水のワープトンネル"], a: 1, exp: "大阪市では、大雨が降った時に汚れた雨水が川にあふれないように、「平成の太閤下水」という大きな地下の管を作っているんだ。これは、汚れた雨水を一時的にためておいて、雨がやんでから処理場できれいにしてから川に流すためのものだよ。" },
+                            { q: "大阪の有名な観光スポットである道頓堀川の水を、もっともっときれいにするために、下水処理場からどんな特別な水を流しているでしょう？", options: ["普通の水道水", "海水", "雨水", "とくべつにきれいにした「超高度処理水（ちょうこうどしょりすい）」"], a: 3, exp: "大阪市では、道頓堀川や東横堀川の水をさらにきれいにするために、中浜下水処理場という場所から、とくべつにきれいになった「超高度処理水」という水を流しているんだ。この水は、とても透明で、川の水をきれいにすることに役立っているよ。" }
+                        ]
+                    },
+                    blueOcean: {
+                        title: "「大阪ブルー・オーシャン・ビジョン」クイズ",
+                        buttonText: "「大阪ブルー・オーシャン・ビジョン」クイズ",
+                        questions: [
+                            { q: "「大阪ブルー・オーシャン・ビジョン」がめざしている、一番大きな目標は何でしょう？", options: ["2030年までに大阪湾の水を透明にする。", "2040年までに全ての海のゴミをなくす。", "2050年までに海洋プラスチックごみによる新たな汚染をゼロにする。", "2025年までにプラスチック製品の生産を半減する。"], a: 2, exp: "「大阪ブルー・オーシャン・ビジョン」の最も大切な目標は、2050年までに、海に新しく増えるプラスチックごみをゼロにすることです。これは、いつまでもきれいな海を守るための、とっても大切なお約束なんだよ。" },
+                            { q: "2019年に大阪で開かれ、「大阪ブルー・オーシャン・ビジョン」が世界中の人たちに知らされた、大きな国際会議は何でしょう？", options: ["国連気候変動枠組条約締約国会議（COP）", "G20大阪サミット", "大阪・関西万博", "アジア太平洋経済協力（APEC）会議"], a: 1, exp: "2019年6月に大阪で開かれたG20大阪サミットという、世界中の偉い人たちが集まる会議で、「大阪ブルー・オーシャン・ビジョン」はみんなに知らされました。これによって、この大きな目標は、世界中のみんなで協力して取り組むべき大切なことだと、たくさんの人が考えるようになったんだ。" },
+                            { q: "海のプラスチックごみを減らすために、大阪市が「お出かけに〇〇ボトル」の使用をみんなにすすめています。〇〇に入る言葉は何でしょう？", options: ["ペットボトル", "捨てられるボトル", "水筒", "マイボトル"], a: 3, exp: "大阪市は、プラスチックごみを減らすために、「お出かけにマイボトル」を使おう！と呼びかけています。これを使うと、ペットボトルみたいに使い捨てのプラスチックごみを減らすことにつながって、環境（地球）にも優しいんだよ。" },
+                            { q: "大阪市が進めている、おうちから出るペットボトルを地域で集めて、もう一度使えるようにする新しい取り組みの名前は何でしょう？", options: ["地域のごみ拾い大作戦", "ペットボトルアートコンテスト", "みんなでつなげるペットボトル循環プロジェクト", "プラスチックごみゼロキャンペーン"], a: 2, exp: "大阪市は、「みんなでつなげるペットボトル循環プロジェクト」という、新しいペットボトルの集め方とリサイクルの方法を進めているよ。集められたペットボトルは、新しいペットボトルに生まれ変わる仕組みになっているんだ。" },
+                            { q: "「大阪ブルー・オーシャン・ビジョン」は、貧しさや環境問題など、世界が抱えるいろいろな困り事を解決するための、ある国際目標にも協力しています。この国際目標は何でしょう？", options: ["世界保健機関（WHO）の目標", "国際連合児童基金（UNICEF）の目標", "SDGs（持続可能な開発目標）", "国際通貨基金（IMF）の目標"], a: 2, exp: "「大阪ブルー・オーシャン・ビジョン」を進める取り組みは、SDGs（エスディージーズ）という国際的な目標を達成するための、特に素晴らしい取り組みとして選ばれているんだよ。SDGsは、2030年までに達成を目指す17の目標のことなんだ。" }
+                        ]
+                    }
+                },
+                feedback: {
+                    correct: "正解！",
+                    incorrect: "残念！",
+                    nextQuestion: "次の問題へ",
+                    resultsTitle: "結果発表！",
+                    resultsMessage: "すごい！全問正解！",
+                    resultsScore: (score, total) => `${total}問中 ${score}問 正解！`,
+                    restartQuiz: "もう一度挑戦！",
+                    changeQuiz: "ほかのクイズに挑戦！",
+                    backToHome: "ホームに戻る",
+                    restartCurrentQuiz: "このクイズを最初から"
+                }
+            },
+            en: {
+                selectionTitle: "Choose a Quiz!",
+                changeLangText: "Back to Language Selection",
+                quizzes: {
+                    water: {
+                        title: "Osaka's 'Waterworks' Quiz",
+                        buttonText: "Osaka's 'Waterworks' Quiz",
+                        questions: [
+                            { q: "Osaka's tap water is said to be delicious! What special process makes it so good?", options: ["All the water pipes are brand new.", "Special machines constantly cool the water.", "It undergoes 'Advanced Water Treatment' at the purification plant.", "It uses fresh spring water directly from the mountains."], a: 2, exp: "In Osaka, the water is cleaned at 'water purification plants' using a special method called 'Advanced Water Treatment.' This system uses things like ozone and activated carbon to thoroughly remove the sources of any remaining smells or tastes in the water. That's why the tap water is so fresh and delicious." },
+                            { q: "A little bit of 'chlorine' is added to tap water to ensure it's safe to drink. What does the Osaka Waterworks Bureau do to reduce the smell of chlorine?", options: ["They carefully adjust the amount of chlorine and change where it's added.", "They don't add any chlorine at all.", "They install special filters on every household tap.", "They put a special deodorizer in the water pipes."], a: 0, exp: "Although chlorine is added for safety, the Osaka Waterworks Bureau reduces the chlorine smell by adjusting the amount and controlling the concentration not only at the purification plant but also at various distribution reservoirs. This ensures everyone can enjoy drinking tap water comfortably." },
+                            { q: "To care for the Earth, Osaka City encourages people to use a 'My ______' when they go out. What word goes in the blank?", options: ["Plastic Bottle", "Disposable Bottle", "Flask", "Bottle"], a: 3, exp: "To reduce plastic waste, Osaka City promotes the use of a 'My Bottle.' By using a reusable My Bottle, you can help reduce single-use plastic waste like PET bottles, which is kinder to our planet." },
+                            { q: "What is the name of the kit that lets everyone experience how tap water is purified?", options: ["Water Analysis Kit", "Water Purification Experiment Kit", "Water Taste-Testing Kit", "Water Pipe Assembly Kit"], a: 1, exp: "Osaka City has a 'Water Purification Experiment Kit' that allows you to try out the water purification process for yourself. Using this kit, you can have fun while learning how water becomes clean." },
+                            { q: "What kind of exhibit has the Osaka Waterworks Bureau prepared to share the secrets of its delicious and safe tap water?", options: ["Posters", "Panel Data", "Large Models", "Picture Books"], a: 1, exp: "The Osaka Waterworks Bureau has prepared 'Panel Data' on the theme of 'The Secrets of Osaka's Safe and Delicious Tap Water.' By looking at this, you can understand why Osaka's tap water is so safe and tasty." }
+                        ]
+                    },
+                    sewer: {
+                        title: "Osaka's 'Sewerage' Quiz",
+                        buttonText: "Osaka's 'Sewerage' Quiz",
+                        questions: [
+                            { q: "Where does the used, dirty water from your bath and toilet go to be cleaned?", options: ["It flows directly into the river.", "It soaks into the ground and disappears.", "It's stored in a tank to be used again.", "It goes to a sewage treatment plant."], a: 3, exp: "Used water from your home travels through underground sewer pipes to a 'sewage treatment plant.' Osaka City has 12 of these plants where the water is cleaned." },
+                            { q: "How is the dirty water cleaned at the sewage treatment plant?", options: ["Strong chemicals are used to dissolve the dirt.", "A special net removes all the trash.", "Tiny living things called microorganisms eat the dirt.", "Sunlight is used to make the dirt disappear."], a: 2, exp: "At the sewage treatment plant, a method called the 'activated sludge process' is used, where microorganisms in the water eat the pollutants and clean the water. Thanks to these microorganisms, over 90% of the pollutants are removed." },
+                            { q: "What is the highly treated water from the sewage plant used for?", options: ["For streams and the water in Osaka Castle's moat.", "It becomes drinking water for homes.", "It's used in swimming pools.", "It's used to fill construction sites."], a: 0, exp: "The highly treated water is a valuable resource. It's used for streams, as firefighting water in emergencies, and even for the water in the famous Osaka Castle's moat! It's a great example of using water wisely." },
+                            { q: "In Osaka, heavy rain used to cause polluted water to overflow into rivers. What is the name of the large underground tunnel built to prevent this?", options: ["Underground Dam", "Heisei Taiko Sewer", "Rainwater Stock Pipe", "Water Warp Tunnel"], a: 1, exp: "To prevent polluted rainwater from overflowing into rivers during heavy downpours, Osaka City built a large underground pipe called the 'Heisei Taiko Sewer.' It temporarily stores the polluted rainwater, which is then sent to a treatment plant to be cleaned after the rain stops." },
+                            { q: "To make the water in famous tourist spots like the Dotonbori River even cleaner, what special kind of water is sent from the sewage treatment plant?", options: ["Regular tap water", "Seawater", "Rainwater", "Specially cleaned 'ultra-advanced treated water'"], a: 3, exp: "To further purify the water in the Dotonbori and Higashi-Yokobori rivers, the Nakahama Sewage Treatment Plant releases specially cleaned 'ultra-advanced treated water.' This water is very clear and helps to clean the river water." }
+                        ]
+                    },
+                    blueOcean: {
+                        title: "'Osaka Blue Ocean Vision' Quiz",
+                        buttonText: "'Osaka Blue Ocean Vision' Quiz",
+                        questions: [
+                            { q: "What is the main goal of the 'Osaka Blue Ocean Vision'?", options: ["To make Osaka Bay's water transparent by 2030.", "To eliminate all ocean trash by 2040.", "To reduce additional pollution from marine plastic debris to zero by 2050.", "To halve the production of plastic products by 2025."], a: 2, exp: "The most important goal of the 'Osaka Blue Ocean Vision' is to reduce new plastic waste entering the ocean to zero by 2050. This is a crucial promise to protect marine life and preserve our beautiful oceans for the future." },
+                            { q: "What major international conference was held in Osaka in 2019, where the 'Osaka Blue Ocean Vision' was shared with the world?", options: ["COP (Conference of the Parties)", "G20 Osaka Summit", "Osaka-Kansai Expo", "APEC (Asia-Pacific Economic Cooperation)"], a: 1, exp: "The 'Osaka Blue Ocean Vision' was shared at the G20 Osaka Summit in June 2019. This helped the goal of 'no new plastic pollution by 2050' become a shared global commitment." },
+                            { q: "To reduce plastic waste, Osaka City recommends using a 'My ______' when you go out. What word goes in the blank?", options: ["Plastic Bottle", "Disposable Bottle", "Flask", "Bottle"], a: 3, exp: "Osaka City promotes using a 'My Bottle' to reduce plastic waste. Using your own reusable bottle helps cut down on single-use plastics like PET bottles, which is better for the environment." },
+                            { q: "What is the name of the new initiative in Osaka City to collect and recycle PET bottles from homes?", options: ["Community Cleanup Operation", "PET Bottle Art Contest", "Community-Connecting PET Bottle Circulation Project", "Plastic Waste Zero Campaign"], a: 2, exp: "Osaka City is promoting the 'Community-Connecting PET Bottle Circulation Project,' a new way to collect and recycle PET bottles. This project turns used bottles into new ones, creating a circular system for plastic resources." },
+                            { q: "The 'Osaka Blue Ocean Vision' also contributes to a set of global goals for a better future, addressing issues like poverty and the environment. What are these goals called?", options: ["World Health Organization (WHO) Goals", "UNICEF Goals", "SDGs (Sustainable Development Goals)", "International Monetary Fund (IMF) Goals"], a: 2, exp: "The efforts of the 'Osaka Blue Ocean Vision' are recognized as a key contribution to the SDGs (Sustainable Development Goals). The SDGs are a set of 17 goals aiming for a better world by 2030." }
+                        ]
+                    }
+                },
+                feedback: {
+                    correct: "Correct!",
+                    incorrect: "Incorrect!",
+                    nextQuestion: "Next Question",
+                    resultsTitle: "Results!",
+                    resultsMessage: "Wow! Perfect score!",
+                    resultsScore: (score, total) => `You got ${score} out of ${total} correct!`,
+                    restartQuiz: "Try Again!",
+                    changeQuiz: "Try Another Quiz!",
+                    backToHome: "Back to Home",
+                    restartCurrentQuiz: "Restart This Quiz"
+                }
+            }
+        };
+
+        // --- アプリの状態管理 ---
+        let currentLanguage = 'jp';
+        let currentQuizType = '';
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        // --- DOM要素の取得 ---
+        const screens = {
+            'language-screen': document.getElementById('language-screen'),
+            'quiz-selection-screen': document.getElementById('quiz-selection-screen'),
+            'quiz-screen': document.getElementById('quiz-screen'),
+            'result-screen': document.getElementById('result-screen')
+        };
+        const quizSelectionTitle = document.getElementById('quiz-selection-title');
+        const changeLangBtnText = document.getElementById('change-lang-btn-text');
+        const quizButtonsContainer = document.getElementById('quiz-buttons');
+        const quizTitle = document.getElementById('quiz-title');
+        const questionCounter = document.getElementById('question-counter');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackContainer = document.getElementById('feedback-container');
+        const feedbackCharacter = document.getElementById('feedback-character');
+        const feedbackTitle = document.getElementById('feedback-title');
+        const feedbackExplanation = document.getElementById('feedback-explanation');
+        const nextQuestionBtn = document.getElementById('next-question-btn');
+        const resultTitle = document.getElementById('result-title');
+        const resultMessage = document.getElementById('result-message');
+        const resultScore = document.getElementById('result-score');
+        const restartQuizBtn = document.getElementById('restart-quiz-btn');
+        const changeQuizBtn = document.getElementById('change-quiz-btn');
+        const restartQuizBtnIngame = document.getElementById('restart-quiz-btn-ingame');
+        const homeBtn = document.getElementById('home-btn');
+
+        // --- 関数定義 ---
+
+        // 指定された画面を表示する関数
+        function showScreen(screenId) {
+            Object.values(screens).forEach(screen => {
+                screen.classList.remove('active');
+            });
+            screens[screenId].classList.add('active');
+        }
+
+        // 言語を選択し、クイズ選択画面を表示する関数
+        function selectLanguage(lang) {
+            currentLanguage = lang;
+            const data = quizData[currentLanguage];
+            quizSelectionTitle.textContent = data.selectionTitle;
+            changeLangBtnText.textContent = data.changeLangText;
+
+            quizButtonsContainer.innerHTML = '';
+            Object.keys(data.quizzes).forEach((key, index) => {
+                const quiz = data.quizzes[key];
+                const button = document.createElement('button');
+                button.textContent = quiz.buttonText;
+                button.className = 'w-full bg-white hover:bg-blue-100 text-blue-800 font-bold py-5 px-6 rounded-xl shadow-lg border-2 border-blue-200 btn-hover fade-in';
+                button.style.animationDelay = `${index * 100}ms`;
+                button.onclick = () => startQuiz(key);
+                quizButtonsContainer.appendChild(button);
+            });
+            showScreen('quiz-selection-screen');
+        }
+
+        // クイズを開始する関数
+        function startQuiz(quizType) {
+            currentQuizType = quizType;
+            currentQuestionIndex = 0;
+            score = 0;
+            displayQuestion();
+            showScreen('quiz-screen');
+        }
+
+        // 問題と選択肢を表示する関数
+        function displayQuestion() {
+            feedbackContainer.classList.add('hidden');
+            const quiz = quizData[currentLanguage].quizzes[currentQuizType];
+            const question = quiz.questions[currentQuestionIndex];
+            const feedback = quizData[currentLanguage].feedback;
+
+            quizTitle.textContent = quiz.title;
+            questionCounter.textContent = `${currentQuestionIndex + 1} / ${quiz.questions.length}`;
+            questionText.textContent = question.q;
+
+            optionsContainer.innerHTML = '';
+            question.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.innerHTML = `<span class="font-bold mr-2">${index + 1}.</span> ${option}`;
+                button.className = 'quiz-option-btn p-4 rounded-lg shadow-md text-left border-2 border-gray-200';
+                button.onclick = () => checkAnswer(index);
+                optionsContainer.appendChild(button);
+            });
+
+            // クイズ中のナビゲーションボタンを設定
+            restartQuizBtnIngame.textContent = feedback.restartCurrentQuiz;
+            restartQuizBtnIngame.onclick = () => startQuiz(currentQuizType);
+            homeBtn.textContent = feedback.backToHome;
+            homeBtn.onclick = () => showScreen('language-screen');
+        }
+
+        // 回答をチェックし、フィードバックを表示する関数
+        function checkAnswer(selectedIndex) {
+            const quiz = quizData[currentLanguage].quizzes[currentQuizType];
+            const question = quiz.questions[currentQuestionIndex];
+            const isCorrect = selectedIndex === question.a;
+            
+            const feedback = quizData[currentLanguage].feedback;
+
+            if (isCorrect) {
+                score++;
+                feedbackTitle.textContent = `✅ ${feedback.correct}`;
+                feedbackTitle.className = 'text-xl md:text-2xl font-bold mb-2 text-green-500';
+                feedbackCharacter.src = characterImages.correct;
+            } else {
+                feedbackTitle.textContent = `❌ ${feedback.incorrect}`;
+                feedbackTitle.className = 'text-xl md:text-2xl font-bold mb-2 text-red-500';
+                feedbackCharacter.src = characterImages.incorrect;
+            }
+            
+            feedbackExplanation.textContent = question.exp;
+            
+            // 選択肢ボタンの見た目を更新
+            const optionButtons = optionsContainer.children;
+            for (let i = 0; i < optionButtons.length; i++) {
+                const button = optionButtons[i];
+                button.disabled = true;
+                button.classList.remove('hover:border-blue-400');
+
+                if (i === question.a) {
+                    button.classList.add('correct-answer');
+                } else if (i === selectedIndex) {
+                    button.classList.add('incorrect-answer');
+                } else {
+                    button.classList.add('disabled-option');
+                }
+            }
+
+            if (currentQuestionIndex < quiz.questions.length - 1) {
+                nextQuestionBtn.textContent = feedback.nextQuestion;
+                nextQuestionBtn.onclick = nextQuestion;
+            } else {
+                nextQuestionBtn.textContent = feedback.resultsTitle;
+                nextQuestionBtn.onclick = showResults;
+            }
+
+            feedbackContainer.classList.remove('hidden');
+            feedbackContainer.classList.add('fade-in');
+        }
+
+        // 次の問題へ進む関数
+        function nextQuestion() {
+            currentQuestionIndex++;
+            displayQuestion();
+        }
+
+        // 結果を表示する関数
+        function showResults() {
+            const feedback = quizData[currentLanguage].feedback;
+            const quiz = quizData[currentLanguage].quizzes[currentQuizType];
+            const totalQuestions = quiz.questions.length;
+
+            resultTitle.textContent = feedback.resultsTitle;
+            
+            if (score === totalQuestions) {
+                resultMessage.textContent = feedback.resultsMessage;
+            } else {
+                resultMessage.textContent = feedback.resultsScore(score, totalQuestions);
+            }
+
+            resultScore.textContent = `${score} / ${totalQuestions}`;
+            
+            restartQuizBtn.textContent = feedback.restartQuiz;
+            restartQuizBtn.onclick = () => startQuiz(currentQuizType);
+
+            changeQuizBtn.textContent = feedback.changeQuiz;
+            changeQuizBtn.onclick = () => showScreen('quiz-selection-screen');
+
+            showScreen('result-screen');
+        }
+
+    </script>
+</body>
+</html>
